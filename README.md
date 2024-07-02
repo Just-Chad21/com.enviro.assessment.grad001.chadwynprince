@@ -14,7 +14,7 @@ The Environmental Assessment Application is designed to provide guidelines and t
 ## Installation
 
 ### Prerequisites
-- Java Development Kit (JDK) 11 or higher
+- Java Development Kit (JDK) 17 or higher
 - Maven 3.6 or higher
 
 ### Steps
@@ -50,7 +50,6 @@ The Environmental Assessment Application is designed to provide guidelines and t
 - Provides guidelines for waste disposal.
 - Offers recycling tips.
 - Categorizes different types of waste.
-- User-friendly interface with accessible information.
 
 
 ## Acknowledgements
