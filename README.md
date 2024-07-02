@@ -20,7 +20,7 @@ The Environmental Assessment Application is designed to provide guidelines and t
 ### Steps
 1. Clone the repository:
     ```bash
-    git clone <repository-url>
+    git clone git@github.com:Just-Chad21/com.enviro.assessment.grad001.chadwynprince.git
     ```
 2. Navigate to the project directory:
     ```bash
