@@ -5,11 +5,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.validation.constraints.NotNull;
-//import org.springframework.data.annotation.Id;
 
-//import javax.persistence.*;
-//import javax.per
-//import javax.validation.constraints.NotNull;
 @Entity
 public class WasteCategory {
     @Id

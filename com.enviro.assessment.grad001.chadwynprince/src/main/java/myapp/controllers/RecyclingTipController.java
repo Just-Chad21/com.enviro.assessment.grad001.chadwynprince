@@ -1,5 +1,6 @@
 package myapp.controllers;
 
+import jakarta.validation.Valid;
 import myapp.model.RecyclingTip;
 import myapp.services.RecyclingTipService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,7 +37,7 @@ public class RecyclingTipController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<RecyclingTip> updateRecyclingTip(@PathVariable Long id, @RequestBody RecyclingTip recyclingTipDetails) {
+    public ResponseEntity<RecyclingTip> updateRecyclingTip(@PathVariable Long id, @Valid @RequestBody RecyclingTip recyclingTipDetails) {
         RecyclingTip updatedRecyclingTip = service.updateRecyclingTip(id, recyclingTipDetails);
         if (updatedRecyclingTip != null) {
             return ResponseEntity.ok(updatedRecyclingTip);
