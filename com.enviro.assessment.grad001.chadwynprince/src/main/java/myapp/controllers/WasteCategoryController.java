@@ -11,29 +11,62 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * @RestController: This annotation indicates that the class is a REST controller in the Spring framework.
+ *                  It combines @Controller and @ResponseBody annotations.
+ * @RequestMapping("/api/waste-categories"): This annotation maps HTTP requests to handler methods of the controller.
+ *                                           The base URL for this controller is /api/waste-categories.
+ */
 @RestController
 @RequestMapping("/api/waste-categories")
 public class WasteCategoryController {
+    /**
+     * @Autowired: This annotation is used to automatically wire the WasteCategoryService bean into the WasteCategoryController class.
+     */
     @Autowired
     private WasteCategoryService wasteCategoryService;
 
+    /**
+     * Retrieves all waste categories.
+     *
+     * @return a list of all WasteCategory entities.
+     */
     @GetMapping
     public List<WasteCategory> getAllWasteCategories() {
         return wasteCategoryService.getAllWasteCategories();
     }
 
+    /**
+     * Retrieves a specific waste category by its ID.
+     *
+     * @param id the ID of the WasteCategory entity.
+     * @return a ResponseEntity containing the WasteCategory entity if found, or 404 Not Found if not.
+     */
     @GetMapping("/{id}")
     public ResponseEntity<WasteCategory> getWasteCategoryById(@PathVariable Long id) {
         Optional<WasteCategory> wasteCategory = wasteCategoryService.getWasteCategoryById(id);
         return wasteCategory.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
+    /**
+     * Creates a new waste category.
+     *
+     * @param wasteCategory the WasteCategory entity to be created.
+     * @return a ResponseEntity containing the created WasteCategory entity and a 201 Created status.
+     */
     @PostMapping
     public ResponseEntity<WasteCategory> createWasteCategory(@Valid @RequestBody WasteCategory wasteCategory) {
         WasteCategory createdWasteCategory = wasteCategoryService.createWasteCategory(wasteCategory);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdWasteCategory);
     }
 
+    /**
+     * Updates an existing waste category.
+     *
+     * @param id the ID of the WasteCategory entity to be updated.
+     * @param wasteCategory the WasteCategory entity with updated values.
+     * @return a ResponseEntity containing the updated WasteCategory entity and a 200 OK status, or 404 Not Found if the entity does not exist.
+     */
     @PutMapping("/{id}")
     public ResponseEntity<WasteCategory> updateWasteCategory(@PathVariable Long id, @Valid @RequestBody WasteCategory wasteCategory) {
         WasteCategory updatedWasteCategory = wasteCategoryService.updateWasteCategory(id, wasteCategory);
@@ -44,6 +77,12 @@ public class WasteCategoryController {
         }
     }
 
+    /**
+     * Deletes a specific waste category by its ID.
+     *
+     * @param id the ID of the WasteCategory entity to be deleted.
+     * @return a ResponseEntity with a 204 No Content status.
+     */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteWasteCategory(@PathVariable Long id) {
         wasteCategoryService.deleteWasteCategory(id);

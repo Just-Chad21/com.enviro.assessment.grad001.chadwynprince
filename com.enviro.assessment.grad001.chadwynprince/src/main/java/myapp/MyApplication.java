@@ -2,9 +2,12 @@ package myapp;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
 
+
+/**
+ * @SpringBootApplication is used to mark the main class of a Spring Boot application,
+ * enabling auto-configuration and component scanning.
+ */
 @SpringBootApplication
 public class MyApplication {
 
