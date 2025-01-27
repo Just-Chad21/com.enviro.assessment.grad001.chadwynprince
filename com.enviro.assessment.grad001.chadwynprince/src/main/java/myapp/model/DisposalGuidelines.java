@@ -15,6 +15,13 @@ public class DisposalGuidelines {
     @NotNull
     private String disposalGuideline;
 
+    public DisposalGuidelines(long id, String disposalGuideline){
+        this.id = id;
+        this.disposalGuideline = disposalGuideline;
+    }
+
+    public DisposalGuidelines(){}
+
     public long getId() {
         return id;
     }

@@ -24,6 +24,13 @@ public class WasteCategory {
     @NotNull
     private String name;
 
+    public WasteCategory(long id, String name){
+        this.id = id;
+        this.name = name;
+    }
+
+    public WasteCategory(){}
+
     // Getters and setters
     public Long getId() {
         return id;
