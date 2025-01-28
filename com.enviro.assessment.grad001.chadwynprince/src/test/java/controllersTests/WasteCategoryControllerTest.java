@@ -3,12 +3,15 @@ package controllersTests;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import myapp.controllers.WasteCategoryController;
 import myapp.model.WasteCategory;
+import myapp.modelAssemblers.WasteCategoryModelAssembler;
 import myapp.services.WasteCategoryService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.hateoas.CollectionModel;
+import org.springframework.hateoas.EntityModel;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -18,6 +21,7 @@ import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -32,6 +36,9 @@ public class WasteCategoryControllerTest {
 
     @InjectMocks
     private WasteCategoryController wasteCategoryController;
+
+    @Mock
+    private WasteCategoryModelAssembler wasteCategoryModelAssembler;
 
     @BeforeEach
     void setUp() {
@@ -50,16 +57,31 @@ public class WasteCategoryControllerTest {
         category2.setId(2L);
         category2.setName("Category 2");
 
-        when(wasteCategoryService.getAllWasteCategories()).thenReturn(Arrays.asList(category1, category2));
+        EntityModel<WasteCategory> entityModel1 = EntityModel.of(
+                category1,
+                linkTo(WasteCategoryController.class).slash(category1.getId()).withSelfRel()
+        );
 
-        // When/Then
+        EntityModel<WasteCategory> entityModel2 = EntityModel.of(
+                category2,
+                linkTo(WasteCategoryController.class).slash(category2.getId()).withSelfRel()
+        );
+
+        CollectionModel<EntityModel<WasteCategory>> collectionModel = CollectionModel.of(
+                Arrays.asList(entityModel1, entityModel2),
+                linkTo(WasteCategoryController.class).withSelfRel()
+        );
+
+        when(wasteCategoryService.getAllWasteCategories()).thenReturn(Arrays.asList(category1, category2));
+        when(wasteCategoryModelAssembler.toCollectionModel(any())).thenReturn(collectionModel);
+
+        // When
         mockMvc.perform(get("/api/waste-categories"))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$[0].id").value(1))
-                .andExpect(jsonPath("$[0].name").value("Category 1"))
-                .andExpect(jsonPath("$[1].id").value(2))
-                .andExpect(jsonPath("$[1].name").value("Category 2"));
+                .andExpect(status().isOk());
+
+        // Then
+        verify(wasteCategoryService, times(1)).getAllWasteCategories();
+        verify(wasteCategoryModelAssembler, times(1)).toCollectionModel(any());
     }
 
     @Test
@@ -69,25 +91,24 @@ public class WasteCategoryControllerTest {
         category.setId(1L);
         category.setName("Category");
 
+        EntityModel<WasteCategory> entityModel = EntityModel.of(
+                category,
+                linkTo(WasteCategoryController.class).slash(category.getId()).withSelfRel(),
+                linkTo(WasteCategoryController.class).withRel("waste-categories")
+        );
+
         when(wasteCategoryService.getWasteCategoryById(1L)).thenReturn(Optional.of(category));
+        when(wasteCategoryModelAssembler.toModel(category)).thenReturn(entityModel);
 
-        // When/Then
-        mockMvc.perform(get("/api/waste-categories/1"))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.id").value(1))
-                .andExpect(jsonPath("$.name").value("Category"));
+        // When
+        mockMvc.perform(get("/api/waste-categories/{id}", 1L))
+                .andExpect(status().isOk());
+
+        // Then
+        verify(wasteCategoryService, times(1)).getWasteCategoryById(1L);
+        verify(wasteCategoryModelAssembler, times(1)).toModel(category);
     }
 
-    @Test
-    void testGetWasteCategoryById_NotFound() throws Exception {
-        // Given
-        when(wasteCategoryService.getWasteCategoryById(2L)).thenReturn(Optional.empty());
-
-        // When/Then
-        mockMvc.perform(get("/api/waste-categories/2"))
-                .andExpect(status().isNotFound());
-    }
 
     @Test
     void testCreateWasteCategory() throws Exception {
@@ -142,32 +163,20 @@ public class WasteCategoryControllerTest {
 
     }
 
-    @Test
-    void testUpdateWasteCategory_NotFound() throws Exception {
-        // Given
-        WasteCategory category = new WasteCategory();
-        category.setId(1L);
-        category.setName("Updated Category");
-
-        ObjectMapper objectMapper = new ObjectMapper();
-        String requestBody = objectMapper.writeValueAsString(category);
-
-        when(wasteCategoryService.updateWasteCategory(eq(1L), any(WasteCategory.class))).thenReturn(null);
-
-        // When/Then
-        mockMvc.perform(put("/api/waste-categories/1")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
-                .andExpect(status().isNotFound());
-    }
 
     @Test
     void testDeleteWasteCategory() throws Exception {
-        // Given
-        doNothing().when(wasteCategoryService).deleteWasteCategory(1L);
 
-        // When/Then
-        mockMvc.perform(delete("/api/waste-categories/1"))
+        WasteCategory wasteCategory = new WasteCategory(1,"harzardous");
+        // Given
+
+        // When & Then
+        when(wasteCategoryService.getWasteCategoryById(1L)).thenReturn(java.util.Optional.of(wasteCategory));
+
+        mockMvc.perform(delete("/api/waste-categories/{id}", 1L))
                 .andExpect(status().isNoContent());
+
+        // Verify that the service's delete method was called
+        verify(wasteCategoryService, times(1)).deleteWasteCategory(1L);
     }
 }

@@ -1,9 +1,14 @@
 package myapp.controllers;
 
 import jakarta.validation.Valid;
+import myapp.exceptions.InvalidInputException;
+import myapp.exceptions.ResourceNotFoundException;
 import myapp.model.WasteCategory;
+import myapp.modelAssemblers.WasteCategoryModelAssembler;
 import myapp.services.WasteCategoryService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.hateoas.CollectionModel;
+import org.springframework.hateoas.EntityModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -25,16 +30,25 @@ public class WasteCategoryController {
      */
     @Autowired
     private WasteCategoryService wasteCategoryService;
+    @Autowired
+    private WasteCategoryModelAssembler wasteCategoryModelAssembler;
 
     /**
      * Retrieves all waste categories.
      *
      * @return a list of all WasteCategory entities.
      */
+
     @GetMapping
-    public List<WasteCategory> getAllWasteCategories() {
-        return wasteCategoryService.getAllWasteCategories();
+    public ResponseEntity<CollectionModel<EntityModel<WasteCategory>>> getAllWasteCategories() {
+        List<WasteCategory> categories = wasteCategoryService.getAllWasteCategories();
+
+        // Convert the list to a CollectionModel with HATEOAS links
+        CollectionModel<EntityModel<WasteCategory>> collectionModel = wasteCategoryModelAssembler.toCollectionModel(categories);
+
+        return ResponseEntity.ok(collectionModel);
     }
+
 
     /**
      * Retrieves a specific waste category by its ID.
@@ -42,10 +56,16 @@ public class WasteCategoryController {
      * @param id the ID of the WasteCategory entity.
      * @return a ResponseEntity containing the WasteCategory entity if found, or 404 Not Found if not.
      */
+
     @GetMapping("/{id}")
-    public ResponseEntity<WasteCategory> getWasteCategoryById(@PathVariable Long id) {
-        Optional<WasteCategory> wasteCategory = wasteCategoryService.getWasteCategoryById(id);
-        return wasteCategory.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+    public ResponseEntity<EntityModel<WasteCategory>> getWasteCategoryById(@PathVariable Long id) {
+        WasteCategory category = wasteCategoryService.getWasteCategoryById(id)
+                .orElseThrow(() -> new ResourceNotFoundException(id));
+
+        // Convert WasteCategory to EntityModel with HATEOAS links
+        EntityModel<WasteCategory> entityModel = wasteCategoryModelAssembler.toModel(category);
+
+        return ResponseEntity.ok(entityModel);
     }
 
     /**
@@ -57,7 +77,10 @@ public class WasteCategoryController {
     @PostMapping
     public ResponseEntity<WasteCategory> createWasteCategory(@Valid @RequestBody WasteCategory wasteCategory) {
         WasteCategory createdWasteCategory = wasteCategoryService.createWasteCategory(wasteCategory);
-        return ResponseEntity.status(HttpStatus.CREATED).body(createdWasteCategory);
+        if (createdWasteCategory == null){
+            throw new InvalidInputException();
+        }
+        return ResponseEntity.status(HttpStatus.CREATED.value()).body(createdWasteCategory);
     }
 
     /**
@@ -73,7 +96,7 @@ public class WasteCategoryController {
         if (updatedWasteCategory != null) {
             return ResponseEntity.ok(updatedWasteCategory);
         } else {
-            return ResponseEntity.notFound().build();
+            throw new ResourceNotFoundException(id);
         }
     }
 
@@ -85,6 +108,8 @@ public class WasteCategoryController {
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteWasteCategory(@PathVariable Long id) {
+        WasteCategory category = wasteCategoryService.getWasteCategoryById(id)
+                .orElseThrow(() -> new ResourceNotFoundException(id));
         wasteCategoryService.deleteWasteCategory(id);
         return ResponseEntity.noContent().build();
     }

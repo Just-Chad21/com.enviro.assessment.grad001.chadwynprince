@@ -46,6 +46,9 @@ public class WasteCategoryService {
      * @return the created WasteCategory entity.
      */
     public WasteCategory createWasteCategory(WasteCategory wasteCategory) {
+        if (wasteCategory.getName() == null || wasteCategory.getName().trim().isEmpty()) {
+            return null;
+        }
         return wasteCategoryRepository.save(wasteCategory);
     }
 
@@ -58,7 +61,7 @@ public class WasteCategoryService {
      */
     public WasteCategory updateWasteCategory(Long id, WasteCategory wasteCategory) {
         Optional<WasteCategory> optionalWasteCategory = wasteCategoryRepository.findById(id);
-        if (optionalWasteCategory.isPresent()) {
+        if (optionalWasteCategory.isPresent() && !wasteCategory.getName().isEmpty()) {
             WasteCategory existingWasteCategory = optionalWasteCategory.get();
             existingWasteCategory.setName(wasteCategory.getName());
             return wasteCategoryRepository.save(existingWasteCategory);

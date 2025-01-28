@@ -22,12 +22,15 @@ public class DisposalGuidelinesService {
     }
 
     public DisposalGuidelines createDisposalGuidelines(DisposalGuidelines disposalGuidelines) {
+        if (disposalGuidelines.getDisposalGuideline() == null || disposalGuidelines.getDisposalGuideline().trim().isEmpty()) {
+            return null;
+        }
         return disposalGuidelinesRepository.save(disposalGuidelines);
     }
 
     public DisposalGuidelines updateDisposalGuidelines(Long id, DisposalGuidelines disposalGuidelines) {
         Optional<DisposalGuidelines> optionalDisposalGuidelines = disposalGuidelinesRepository.findById(id);
-        if (optionalDisposalGuidelines.isPresent()) {
+        if (optionalDisposalGuidelines.isPresent() && !disposalGuidelines.getDisposalGuideline().isEmpty()) {
             DisposalGuidelines existingDisposalGuidelines = optionalDisposalGuidelines.get();
             existingDisposalGuidelines.setDisposalGuideline(disposalGuidelines.getDisposalGuideline());
             return disposalGuidelinesRepository.save(existingDisposalGuidelines);

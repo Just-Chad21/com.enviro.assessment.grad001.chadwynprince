@@ -12,7 +12,6 @@ public class RecyclingTip {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-//    @NotBlank(message = "Tip must not be empty")
     @NotNull
     private String tip;
 

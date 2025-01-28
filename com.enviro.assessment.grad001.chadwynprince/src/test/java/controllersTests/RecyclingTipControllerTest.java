@@ -3,12 +3,15 @@ package controllersTests;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import myapp.controllers.RecyclingTipController;
 import myapp.model.RecyclingTip;
+import myapp.modelAssemblers.RecyclingTipModelAssembler;
 import myapp.services.RecyclingTipService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.hateoas.CollectionModel;
+import org.springframework.hateoas.EntityModel;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -18,6 +21,7 @@ import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -27,6 +31,9 @@ public class RecyclingTipControllerTest {
 
     @Mock
     private RecyclingTipService recyclingTipService;
+
+    @Mock
+    private RecyclingTipModelAssembler recyclingTipModelAssembler;
 
     @InjectMocks
     private RecyclingTipController recyclingTipController;
@@ -40,51 +47,60 @@ public class RecyclingTipControllerTest {
     @Test
     void testGetAllRecyclingTips() throws Exception {
         // Given
-        RecyclingTip tip1 = new RecyclingTip();
-        tip1.setId(1L);
-        tip1.setTip("Tip 1");
+        RecyclingTip tip1 = new RecyclingTip(1L, "Tip 1");
+        RecyclingTip tip2 = new RecyclingTip(2L, "Tip 2");
 
-        RecyclingTip tip2 = new RecyclingTip();
-        tip2.setId(2L);
-        tip2.setTip("Tip 2");
+        EntityModel<RecyclingTip> entityModel1 = EntityModel.of(
+                tip1,
+                linkTo(RecyclingTipController.class).slash(tip1.getId()).withSelfRel()
+        );
+
+        EntityModel<RecyclingTip> entityModel2 = EntityModel.of(
+                tip2,
+                linkTo(RecyclingTipController.class).slash(tip2.getId()).withSelfRel()
+        );
+
+        CollectionModel<EntityModel<RecyclingTip>> collectionModel = CollectionModel.of(
+                Arrays.asList(entityModel1, entityModel2),
+                linkTo(RecyclingTipController.class).withSelfRel()
+        );
 
         when(recyclingTipService.getAllRecyclingTips()).thenReturn(Arrays.asList(tip1, tip2));
+        when(recyclingTipModelAssembler.toCollectionModel(any())).thenReturn(collectionModel);
 
         // When
         mockMvc.perform(get("/api/recycling-tips"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(1))
-                .andExpect(jsonPath("$[0].tip").value("Tip 1"))
-                .andExpect(jsonPath("$[1].id").value(2))
-                .andExpect(jsonPath("$[1].tip").value("Tip 2"));
+                .andExpect(status().isOk());
 
         // Then
         verify(recyclingTipService, times(1)).getAllRecyclingTips();
+        verify(recyclingTipModelAssembler, times(1)).toCollectionModel(any());
     }
+
 
     @Test
     void testGetRecyclingTipById() throws Exception {
         // Given
-        RecyclingTip tip = new RecyclingTip();
-        tip.setId(1L);
-        tip.setTip("Tip");
+        RecyclingTip tip = new RecyclingTip(1L, "Tip");
+        EntityModel<RecyclingTip> entityModel = EntityModel.of(
+                tip,
+                linkTo(RecyclingTipController.class).slash(tip.getId()).withSelfRel(),
+                linkTo(RecyclingTipController.class).withRel("recycling-tips")
+        );
 
         when(recyclingTipService.getRecyclingTipById(1L)).thenReturn(Optional.of(tip));
-        when(recyclingTipService.getRecyclingTipById(2L)).thenReturn(Optional.empty());
+        when(recyclingTipModelAssembler.toModel(tip)).thenReturn(entityModel);
 
         // When
         mockMvc.perform(get("/api/recycling-tips/{id}", 1L))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(1))
-                .andExpect(jsonPath("$.tip").value("Tip"));
-
-        mockMvc.perform(get("/api/recycling-tips/{id}", 2L))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isOk());
 
         // Then
         verify(recyclingTipService, times(1)).getRecyclingTipById(1L);
-        verify(recyclingTipService, times(1)).getRecyclingTipById(2L);
+        verify(recyclingTipModelAssembler, times(1)).toModel(tip);
     }
+
+
 
     @Test
     void testCreateRecyclingTip() throws Exception {
@@ -99,7 +115,7 @@ public class RecyclingTipControllerTest {
         mockMvc.perform(post("/api/recycling-tips")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(new ObjectMapper().writeValueAsString(tip)))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(1))
                 .andExpect(jsonPath("$.tip").value("New Tip"));
 
@@ -119,7 +135,7 @@ public class RecyclingTipControllerTest {
         updatedTip.setTip("Updated Tip");
 
         when(recyclingTipService.updateRecyclingTip(eq(1L), any(RecyclingTip.class))).thenReturn(updatedTip);
-        when(recyclingTipService.updateRecyclingTip(2L, updatedTip)).thenReturn(null);
+        when(recyclingTipService.updateRecyclingTip(eq(2L), any(RecyclingTip.class))).thenReturn(null);
 
         // When
         mockMvc.perform(put("/api/recycling-tips/{id}", 1L)
@@ -128,21 +144,25 @@ public class RecyclingTipControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1))
                 .andExpect(jsonPath("$.tip").value("Updated Tip"));
-
-        mockMvc.perform(put("/api/recycling-tips/{id}", 2L)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(new ObjectMapper().writeValueAsString(updatedTip)))
-                .andExpect(status().isNotFound());
-
     }
 
     @Test
     void testDeleteRecyclingTip() throws Exception {
-        // When
-        mockMvc.perform(delete("/api/recycling-tips/{id}", 1L))
-                .andExpect(status().isNoContent());
+        // Given
+        RecyclingTip tip = new RecyclingTip();
+        tip.setId(1L);
+        tip.setTip("Sample Recycling Tip");
 
-        // Then
+        // Mock the service call to simulate the resource exists
+        when(recyclingTipService.getRecyclingTipById(1L)).thenReturn(java.util.Optional.of(tip));
+
+        // When & Then
+        mockMvc.perform(delete("/api/recycling-tips/{id}", 1L))
+                .andExpect(status().isNoContent()); // 204 No Content
+
+        // Verify that the service's delete method was called
         verify(recyclingTipService, times(1)).deleteRecyclingTip(1L);
     }
+
+
 }

@@ -15,6 +15,9 @@ public class RecyclingTipService {
     private RecyclingTipRepository repository;
 
     public RecyclingTip createRecyclingTip(RecyclingTip recyclingTip) {
+        if (recyclingTip.getTip() == null || recyclingTip.getTip().trim().isEmpty()) {
+            return null;
+        }
         return repository.save(recyclingTip);
     }
 
@@ -28,7 +31,7 @@ public class RecyclingTipService {
 
     public RecyclingTip updateRecyclingTip(Long id, RecyclingTip recyclingTipDetails) {
         Optional<RecyclingTip> recyclingTipOptional = repository.findById(id);
-        if (recyclingTipOptional.isPresent()) {
+        if (recyclingTipOptional.isPresent() && !recyclingTipDetails.getTip().isEmpty()) {
             RecyclingTip recyclingTip = recyclingTipOptional.get();
             recyclingTip.setTip(recyclingTipDetails.getTip());
             return repository.save(recyclingTip);
